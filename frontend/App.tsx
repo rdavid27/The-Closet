@@ -1,29 +1,20 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-
-const BACKEND_URL = 'http://10.0.2.2:8000';
-// 10.0.2.2 is a special Android emulator address that maps to your laptop's localhost
+import { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import CameraScreen from './app/camera';
 
 export default function App() {
-  const [status, setStatus] = useState('Checking connection...');
+  const [showCamera, setShowCamera] = useState(false);
 
-  useEffect(() => {
-    fetch(`${BACKEND_URL}/health`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'ok') {
-          setStatus('✅ Backend connected');
-        } else {
-          setStatus('⚠️ Backend error');
-        }
-      })
-      .catch(() => setStatus('❌ Could not reach backend'));
-  }, []);
+  if (showCamera) {
+    return <CameraScreen />;
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Closet AI</Text>
-      <Text>{status}</Text>
+      <TouchableOpacity style={styles.button} onPress={() => setShowCamera(true)}>
+        <Text style={styles.buttonText}>Add Item</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -38,6 +29,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 32,
+  },
+  button: {
+    backgroundColor: '#000',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
