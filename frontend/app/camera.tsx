@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { compressImage } from '../utils/imageUtils';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const BACKEND_URL = 'http://10.92.16.166:8000';
 
@@ -27,45 +28,47 @@ export default function CameraScreen() {
     );
   }
 
- async function handleCapture() {
+async function handleCapture() {
   if (!cameraRef.current || uploading) return;
 
   try {
     setUploading(true);
 
+    // 1. Take photo
     const photo = await cameraRef.current.takePictureAsync({
-      quality: 0.8,
+      quality: 1,
+      skipProcessing: true,
     });
 
     if (!photo) throw new Error('Failed to capture photo');
 
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${BACKEND_URL}/api/v1/closet/upload`);
+    // 2. Compress and convert to WebP
+    const compressedUri = await compressImage(photo.uri);
 
-      xhr.onload = () => {
-        if (xhr.status === 201) {
-          resolve();
-        } else {
-          reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
-        }
-      };
-
-      xhr.onerror = (e) => reject(new Error(`Network error: ${JSON.stringify(e)}`));
-      xhr.ontimeout = () => reject(new Error('Request timed out'));
-      xhr.timeout = 30000;
-
-      const formData = new FormData();
-      formData.append('file', {
-        uri: photo.uri,
-        type: 'image/jpeg',
-        name: 'upload.jpg',
-      } as any);
-
-      xhr.send(formData);
+    // 3. Read as base64
+    const base64 = await FileSystem.readAsStringAsync(compressedUri, {
+      encoding: FileSystem.EncodingType.Base64,
     });
 
-    Alert.alert('Success', 'Item added to your closet!');
+    // 4. Upload as JSON
+    const response = await fetch(`${BACKEND_URL}/api/v1/closet/upload-base64`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: base64,
+        mime_type: 'image/webp',
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 201) {
+      Alert.alert('Success', 'Item added to your closet!');
+    } else {
+      throw new Error(data.detail || 'Upload failed');
+    }
 
   } catch (error: any) {
     Alert.alert('Error', error.message || 'Something went wrong');
