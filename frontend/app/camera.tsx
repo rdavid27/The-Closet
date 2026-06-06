@@ -78,20 +78,19 @@ async function handleCapture() {
 }
 
   return (
-    <View style={styles.container}>
-      <CameraView style={styles.camera} facing="back" ref={cameraRef}>
-        <View style={styles.overlay}>
-          {uploading ? (
-            <ActivityIndicator size="large" color="#ffffff" />
-          ) : (
-            <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </CameraView>
+  <View style={styles.container}>
+    <CameraView style={styles.camera} facing="back" ref={cameraRef} />
+    <View style={styles.overlay}>
+      {uploading ? (
+        <ActivityIndicator size="large" color="#ffffff" />
+      ) : (
+        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
+          <View style={styles.captureButtonInner} />
+        </TouchableOpacity>
+      )}
     </View>
-  );
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -103,12 +102,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 48,
-  },
+  position: 'absolute',
+  bottom: 48,
+  left: 0,
+  right: 0,
+  alignItems: 'center',
+},
   captureButton: {
     width: 72,
     height: 72,
