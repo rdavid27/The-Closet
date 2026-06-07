@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { compressImage } from '../utils/imageUtils';
 import * as FileSystem from 'expo-file-system/legacy';
+import { compressImage } from '../utils/imageUtils';
 
 const BACKEND_URL = 'http://10.92.16.166:8000';
 
-export default function CameraScreen() {
+export default function CameraScreen({ onDone }: { onDone: () => void }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [uploading, setUploading] = useState(false);
   const cameraRef = useRef<CameraView>(null);
@@ -28,69 +28,67 @@ export default function CameraScreen() {
     );
   }
 
-async function handleCapture() {
-  if (!cameraRef.current || uploading) return;
+  async function handleCapture() {
+    if (!cameraRef.current || uploading) return;
 
-  try {
-    setUploading(true);
+    try {
+      setUploading(true);
 
-    // 1. Take photo
-    const photo = await cameraRef.current.takePictureAsync({
-      quality: 1,
-      skipProcessing: true,
-    });
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        skipProcessing: true,
+      });
 
-    if (!photo) throw new Error('Failed to capture photo');
+      if (!photo) throw new Error('Failed to capture photo');
 
-    // 2. Compress and convert to WebP
-    const compressedUri = await compressImage(photo.uri);
+      const compressedUri = await compressImage(photo.uri);
 
-    // 3. Read as base64
-    const base64 = await FileSystem.readAsStringAsync(compressedUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+      const base64 = await FileSystem.readAsStringAsync(compressedUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-    // 4. Upload as JSON
-    const response = await fetch(`${BACKEND_URL}/api/v1/closet/upload-base64`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image: base64,
-        mime_type: 'image/webp',
-      }),
-    });
+      const response = await fetch(`${BACKEND_URL}/api/v1/closet/upload-base64`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64,
+          mime_type: 'image/webp',
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.status === 201) {
-      Alert.alert('Success', 'Item added to your closet!');
-    } else {
-      throw new Error(data.detail || 'Upload failed');
+      if (response.status === 201) {
+        Alert.alert('Success', 'Item added to your closet!', [
+          { text: 'OK', onPress: onDone }
+        ]);
+      } else {
+        throw new Error(data.detail || 'Upload failed');
+      }
+
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Something went wrong');
+    } finally {
+      setUploading(false);
     }
-
-  } catch (error: any) {
-    Alert.alert('Error', error.message || 'Something went wrong');
-  } finally {
-    setUploading(false);
   }
-}
 
   return (
-  <View style={styles.container}>
-    <CameraView style={styles.camera} facing="back" ref={cameraRef} />
-    <View style={styles.overlay}>
-      {uploading ? (
-        <ActivityIndicator size="large" color="#ffffff" />
-      ) : (
-        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
-          <View style={styles.captureButtonInner} />
-        </TouchableOpacity>
-      )}
+    <View style={styles.container}>
+      <CameraView style={styles.camera} facing="back" ref={cameraRef} />
+      <View style={styles.overlay}>
+        {uploading ? (
+          <ActivityIndicator size="large" color="#ffffff" />
+        ) : (
+          <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
+            <View style={styles.captureButtonInner} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
-  </View>
-);
+  );
 }
 
 const styles = StyleSheet.create({
@@ -102,12 +100,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-  position: 'absolute',
-  bottom: 48,
-  left: 0,
-  right: 0,
-  alignItems: 'center',
-},
+    position: 'absolute',
+    bottom: 48,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   captureButton: {
     width: 72,
     height: 72,

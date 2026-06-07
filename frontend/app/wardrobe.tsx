@@ -33,12 +33,10 @@ type ItemsResponse = {
   has_more: boolean;
 };
 
-// Skeleton card shown while loading
 function SkeletonCard() {
   return <View style={styles.skeletonCard} />;
 }
 
-// Empty state shown when user has no items
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <View style={styles.emptyContainer}>
@@ -53,7 +51,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-// Individual item card
 function ItemCard({ item }: { item: WardrobeItem }) {
   return (
     <View style={styles.card}>
@@ -72,7 +69,13 @@ function ItemCard({ item }: { item: WardrobeItem }) {
   );
 }
 
-export default function WardrobeScreen({ onAddItem }: { onAddItem: () => void }) {
+export default function WardrobeScreen({
+  onAddItem,
+  onRemix,
+}: {
+  onAddItem: () => void;
+  onRemix: (itemIds: string[]) => void;
+}) {
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -104,7 +107,6 @@ export default function WardrobeScreen({ onAddItem }: { onAddItem: () => void })
     }
   }, []);
 
-  // Load on mount
   useState(() => {
     fetchItems(1, true);
   });
@@ -120,7 +122,6 @@ export default function WardrobeScreen({ onAddItem }: { onAddItem: () => void })
     fetchItems(page + 1, false);
   }, [loadingMore, hasMore, page, fetchItems]);
 
-  // Show skeletons on initial load
   if (loading) {
     return (
       <View style={styles.container}>
@@ -140,10 +141,31 @@ export default function WardrobeScreen({ onAddItem }: { onAddItem: () => void })
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Closet</Text>
-        <TouchableOpacity style={styles.addButton} onPress={onAddItem}>
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {items.length >= 2 && (
+            <TouchableOpacity
+              style={styles.remixButton}
+              onPress={() => onRemix(items.map(i => i.id))}
+            >
+              <Text style={styles.remixButtonText}>✦ Remix</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.addButton} onPress={onAddItem}>
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {items.length < 5 && (
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {items.length} of 5 items added — upload more to unlock better looks
+          </Text>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${(items.length / 5) * 100}%` as any }]} />
+          </View>
+        </View>
+      )}
 
       <FlashList
         data={items}
@@ -189,6 +211,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   addButton: {
     backgroundColor: '#111',
     paddingHorizontal: 16,
@@ -199,6 +225,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  remixButton: {
+    backgroundColor: '#6c47ff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  remixButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 2,
+  },
+  progressFill: {
+    height: 4,
+    backgroundColor: '#6c47ff',
+    borderRadius: 2,
   },
   listContent: {
     padding: 16,

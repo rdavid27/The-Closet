@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import supabase
 from api.v1.closet import router as closet_router
+from api.v1.stylist import router as stylist_router
 
 app = FastAPI()
 
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(closet_router, prefix="/api/v1/closet")
+app.include_router(stylist_router, prefix="/api/v1/stylist")
 
 @app.get("/health")
 def health_check():
